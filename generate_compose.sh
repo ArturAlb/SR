@@ -18,6 +18,7 @@ UTILS_DIR="${BASE_DIR}/utils"
 prepare_build_dirs() {
   rm -rf "$BUILD_DIR"
   mkdir -p "$BUILD_DIR"
+  rm -f "$COMPOSE_FILE"
 }
 
 create_build_context() {
