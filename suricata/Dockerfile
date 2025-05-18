@@ -1,3 +1,6 @@
+# suricata/Dockerfile
 FROM jasonish/suricata:latest
 
-COPY config /etc/suricata/
+# Copy your custom rules later if needed
+COPY suricata.yaml /etc/suricata/suricata.yaml
+COPY rules/ /etc/suricata/rules/
