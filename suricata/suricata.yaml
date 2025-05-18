@@ -4,3 +4,6 @@ af-packet:
     cluster-type: cluster_flow
     defrag: yes
     use-mmap: yes
+    copy-mode: ips
+    copy-iface: eth0
+    block: true
