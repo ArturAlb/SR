@@ -114,6 +114,21 @@ services:
       tor_net:
         ipv4_address: 10.1.2.2
 
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: suricata
+    command: ["-i", "eth0"]
+    volumes:
+      - ./suricata/config:/etc/suricata
+      - ./suricata/logs:/var/log/suricata
+    networks:
+      tor_net:
+        ipv4_address: 10.1.3.3
+    tty: true
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
 networks:
   tor_net:
     name: tor_net-10.1.0.0
