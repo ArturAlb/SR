@@ -30,10 +30,18 @@ create_build_context() {
   mkdir -p "${context}${dest}"
   cp -r "${src}/." "${context}${dest}"
 
+   # Add entrypoint if it exists (not for censor)
+  if [[ -f "${src}/entrypoint.sh" ]]; then
+    entrypoint_line="ENTRYPOINT [\"${dest}/entrypoint.sh\"]"
+  else
+    entrypoint_line=''
+  fi
+
   # Basic Dockerfile
   cat <<EOF > "${context}/Dockerfile"
 FROM handsonsecurity/seed-ubuntu:large
 COPY ./${dest} ${dest}
+${entrypoint_line}
 CMD ["/bin/bash"]
 EOF
 }
@@ -54,6 +62,8 @@ write_service_block() {
     build: ./build/${name}
     container_name: ${container_name}
     tty: true
+    cap_add:
+      - NET_ADMIN
     networks:
       ${net}:
         ipv4_address: ${ip}
@@ -93,23 +103,25 @@ write_hidden_service() {
 }
 
 write_censor() {
-  create_build_context "censor" "${UTILS_DIR}/censor" "/censor"
+  local context="${BUILD_DIR}/censor"
+  mkdir -p "${context}/censor"
+  cp -r "${UTILS_DIR}/censor/." "${context}/censor"
+  cp "${UTILS_DIR}/censor/Dockerfile" "${context}"
 
   cat <<EOF >> "$COMPOSE_FILE"
   censor:
     build: ./build/censor
-    container_name: censor
-    tty: true
+    container_name: censor-11.1.0.254-10.1.0.253
     cap_add:
       - NET_ADMIN
-    sysctls:
-      - net.ipv4.ip_forward=1
-    entrypoint: ["/censor/entrypoint.sh"]
+      - NET_RAW
     networks:
       client_net:
         ipv4_address: 11.1.0.254
       tor_net:
         ipv4_address: 10.1.0.253
+    command: ["--af-packet"]
+    tty: true
 
 EOF
 }
