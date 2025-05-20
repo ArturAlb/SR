@@ -1,0 +1,7 @@
+HiddenServiceDir /var/lib/tor/hidden_service/
+HiddenServicePort 80 172.19.0.30:80
+
+SocksPort 172.18.0.20:9050
+SocksPolicy accept 172.18.0.0/16
+Log notice stdout
+ControlPort 9051

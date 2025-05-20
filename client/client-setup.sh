@@ -12,6 +12,8 @@ sleep 10
 # Example: curl through Tor SOCKS proxy to check IP
 curl --socks5-hostname 127.0.0.1:9050 https://check.torproject.org
 
+export http_proxy="socks5://172.18.0.20:9050"
+export https_proxy="socks5://172.18.0.20:9050"
 
 # Keep container running
 tail -f /dev/null

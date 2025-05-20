@@ -23,6 +23,8 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+    depends_on:
+      - tor-proxy
 
   firewall:
     build:
@@ -37,15 +39,25 @@ services:
       global_net:
         ipv4_address: 172.19.0.254
 
-
+  tor-proxy:
+    build:
+      context: ./tor-proxy
+    networks:
+      country_net:
+        ipv4_address: 172.18.0.20
+      global_net:
+        ipv4_address: 172.19.0.20
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
 
   service:
     build:
-        context: .
-        dockerfile: service/Dockerfile
-    cap_add:
-        - NET_ADMIN
-        - NET_RAW
+      context: .
+      dockerfile: service/Dockerfile
     networks:
       global_net:
-        ipv4_address: 172.19.0.20
+        ipv4_address: 172.19.0.30
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
