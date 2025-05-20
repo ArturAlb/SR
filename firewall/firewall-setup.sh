@@ -25,5 +25,12 @@ iptables -A FORWARD -s 172.18.0.0/16 -d 172.19.0.0/16 -j LOG --log-prefix "Block
 # Drop all other direct traffic from country to global
 iptables -A FORWARD -s 172.18.0.0/16 -d 172.19.0.0/16 -j DROP
 
+# Mirror traffic to Suricata
+iptables -I FORWARD -j NFQUEUE --queue-num 0
+
+# Block based on Suricata alerts (assuming Suricata uses NFQ)
+iptables -A INPUT -j NFQUEUE --queue-num 0
+iptables -A OUTPUT -j NFQUEUE --queue-num 0
+
 # Keep container alive
 tail -f /dev/null

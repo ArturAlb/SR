@@ -1,0 +1,43 @@
+%YAML 1.1
+---
+# Suricata configuration file
+
+# Network interface to monitor
+af-packet:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+    use-mmap: yes
+
+# Rule management
+default-rule-path: /etc/suricata/rules
+rule-files:
+  - tor.rules
+
+# Logging configuration
+logging:
+  default-log-level: info
+  outputs:
+    - console:
+        enabled: yes
+    - file:
+        enabled: yes
+        filename: /var/log/suricata/eve.json
+        types:
+          - alert
+          - http
+          - dns
+          - tls
+    - fast:
+        enabled: yes
+        filename: /var/log/suricata/fast.log
+        append: yes
+
+  nfq:
+    mode: accept
+    repeat-mark: 1
+    repeat-mask: 1
+    fail-open: yes
+    queues:
+      - queue: 0

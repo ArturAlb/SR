@@ -61,3 +61,22 @@ services:
     cap_add:
       - NET_ADMIN
       - NET_RAW
+
+  suricata:
+      image: jasonish/suricata:latest
+      networks:
+        country_net:
+          ipv4_address: 172.18.0.40
+      volumes:
+        - ./suricata/config:/etc/suricata
+        - ./suricata/logs:/var/log/suricata
+      cap_add:
+        - NET_ADMIN
+        - NET_RAW
+        - SYS_NICE
+      environment:
+        - INTERFACE=eth0
+      command: ["-i", "eth0", "-c", "/etc/suricata/suricata.yaml", "-S", "/etc/suricata/tor.rules"]
+      depends_on:
+        - firewall
+      restart: unless-stopped
