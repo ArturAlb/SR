@@ -30,11 +30,14 @@ services:
       dockerfile: firewall/dockerfile
     cap_add:
       - NET_ADMIN
+      - NET_RAW
     networks:
       country_net:
         ipv4_address: 172.18.0.254
       global_net:
         ipv4_address: 172.19.0.254
+
+
 
   service:
     image: nginx

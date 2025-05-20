@@ -3,17 +3,22 @@
 # Enable IP forwarding
 sysctl -w net.ipv4.ip_forward=1
 
-# Flush existing iptables rules
+# Flush all existing rules
 iptables -F
 iptables -t nat -F
 iptables -X
 
-# Set default policies to ACCEPT
-iptables -P FORWARD ACCEPT
+# ✅ Default: DROP everything by default
+iptables -P FORWARD DROP
 
-# Allow forwarding between interfaces (adjust interface names if needed)
-iptables -A FORWARD -i eth0 -o eth1 -j ACCEPT
-iptables -A FORWARD -i eth1 -o eth0 -j ACCEPT
+# ✅ Allow return traffic (global to country)
+iptables -A FORWARD -i eth1 -o eth0 -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-# Keep container running to allow routing
+# ❌ Block all country → global traffic (172.18.x → 172.19.x)
+iptables -A FORWARD -s 172.18.0.0/16 -d 172.19.0.0/16 -j DROP
+
+# 🧪 Optional: Log dropped attempts
+iptables -A FORWARD -s 172.18.0.0/16 -d 172.19.0.0/16 -j LOG --log-prefix "Blocked country → global: "
+
+# Keep container alive
 tail -f /dev/null
