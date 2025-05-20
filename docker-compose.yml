@@ -1,156 +1,43 @@
-services:
-  client:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: client-10.1.2.1
-    volumes:
-      - ./client:/client
-    tty: true
-    entrypoint: ["/client/entrypoint.sh"]
-    command: ["/bin/sh"]
-    networks:
-      client_net:
-        ipv4_address: 10.10.1.10
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-
-  relay1:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: relay1-10.10.3.2
-    volumes:
-      - ./relay1:/relay
-    tty: true
-    networks:
-      tor_net:
-        ipv4_address: 10.10.3.2
-
-  relay2:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: relay2-10.10.3.3
-    volumes:
-      - ./relay2:/relay
-    tty: true
-    networks:
-      tor_net:
-        ipv4_address: 10.10.3.3
-
-  relay3:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: relay3-10.10.3.4
-    volumes:
-      - ./relay3:/relay
-    tty: true
-    networks:
-      tor_net:
-        ipv4_address: 10.10.3.4
-
-  relay4:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: relay4-10.10.3.5
-    volumes:
-      - ./relay4:/relay
-    tty: true
-    networks:
-      tor_net:
-        ipv4_address: 10.10.3.5
-
-  relay5:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: relay5-10.10.3.6
-    volumes:
-      - ./relay5:/relay
-    tty: true
-    networks:
-      tor_net:
-        ipv4_address: 10.10.3.6
-
-  relay6:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: relay6-10.10.3.7
-    volumes:
-      - ./relay6:/relay
-    tty: true
-    networks:
-      tor_net:
-        ipv4_address: 10.10.3.7
-
-  exit_node1:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: exit_node1-10.10.3.8
-    volumes:
-      - ./exit1:/relay
-      - ./hidden_service/certs:/relay/certs/hidden_service
-    tty: true
-    networks:
-      tor_net:
-        ipv4_address: 10.10.3.8
-
-  exit_node2:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: exit_node2-10.10.3.9
-    volumes:
-      - ./exit2:/relay
-      - ./hidden_service/certs:/relay/certs/hidden_service
-    tty: true
-    networks:
-      tor_net:
-        ipv4_address: 10.10.3.9
-
-  exit_node3:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: exit_node3-10.10.3.10
-    volumes:
-      - ./exit3:/relay
-      - ./hidden_service/certs:/relay/certs/hidden_service
-    tty: true
-    networks:
-      tor_net:
-        ipv4_address: 10.10.3.10
-
-  hidden_service:
-    image: handsonsecurity/seed-ubuntu:large
-    container_name: hidden_service
-    volumes:
-      - ./hidden_service:/relay
-    tty: true
-    networks:
-      service_net:
-        ipv4_address: 10.10.2.20
-
-  suricata:
-    image: jasonish/suricata:latest
-    container_name: suricata
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    networks:
-      client_net:
-        ipv4_address: 10.10.1.2
-      service_net:
-        ipv4_address: 10.10.2.2
-    volumes:
-      - ./suricata/config/suricata.yaml:/etc/suricata/suricata.yaml
-      - ./suricata/config/rules:/etc/suricata/rules
-    command: ["--af-packet"]
-    tty: true
-
-
+version: '3.8'
 
 networks:
-  client_net:
+  country_net:
+    driver: bridge
     ipam:
       config:
-        - subnet: 10.10.1.0/24
-
-  service_net:
+        - subnet: 172.18.0.0/16
+  global_net:
+    driver: bridge
     ipam:
       config:
-        - subnet: 10.10.2.0/24
+        - subnet: 172.19.0.0/16
 
-  tor_net:
-    name: tor_net
-    ipam:
-      config:
-        - subnet: 10.10.3.0/24
+services:
+  client:
+    build:
+      context: .
+      dockerfile: client/dockerfile
+    networks:
+      country_net:
+        ipv4_address: 172.18.0.10
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
 
+  firewall:
+    build:
+      context: .
+      dockerfile: firewall/dockerfile
+    cap_add:
+      - NET_ADMIN
+    networks:
+      country_net:
+        ipv4_address: 172.18.0.254
+      global_net:
+        ipv4_address: 172.19.0.254
 
+  service:
+    image: nginx
+    networks:
+      global_net:
+        ipv4_address: 172.19.0.20

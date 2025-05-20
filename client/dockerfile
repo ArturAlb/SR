@@ -1,0 +1,8 @@
+FROM ubuntu:latest
+
+RUN apt-get update && apt-get install -y iproute2 iputils-ping curl
+
+COPY client/client-setup.sh /usr/local/bin/client-setup.sh
+RUN chmod +x /usr/local/bin/client-setup.sh
+
+ENTRYPOINT ["/usr/local/bin/client-setup.sh"]
