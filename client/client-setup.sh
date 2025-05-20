@@ -1,7 +1,17 @@
 #!/bin/bash
 
-# Replace default route to use firewall container IP (assumes 172.18.0.254)
-ip route replace default via 172.18.0.254
+# Set default gateway to firewall
+ip route add default via 172.18.0.254
 
-# Keep container alive
+# Start Tor in background
+tor &
+
+# Wait for Tor to start
+sleep 10
+
+# Example: curl through Tor SOCKS proxy to check IP
+curl --socks5-hostname 127.0.0.1:9050 https://check.torproject.org
+
+
+# Keep container running
 tail -f /dev/null

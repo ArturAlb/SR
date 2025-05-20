@@ -16,7 +16,7 @@ services:
   client:
     build:
       context: .
-      dockerfile: client/dockerfile
+      dockerfile: client/Dockerfile
     networks:
       country_net:
         ipv4_address: 172.18.0.10
@@ -27,7 +27,7 @@ services:
   firewall:
     build:
       context: .
-      dockerfile: firewall/dockerfile
+      dockerfile: firewall/Dockerfile
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -40,7 +40,12 @@ services:
 
 
   service:
-    image: nginx
+    build:
+        context: .
+        dockerfile: service/Dockerfile
+    cap_add:
+        - NET_ADMIN
+        - NET_RAW
     networks:
       global_net:
         ipv4_address: 172.19.0.20

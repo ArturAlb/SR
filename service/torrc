@@ -1,0 +1,10 @@
+# Enable hidden service
+HiddenServiceDir /var/lib/tor/hidden_service/
+HiddenServicePort 80 127.0.0.1:80
+
+
+# Optional: control port for managing tor (not required)
+ControlPort 9051
+
+Log notice stdout
+Log debug stdout

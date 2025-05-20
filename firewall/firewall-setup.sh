@@ -8,17 +8,22 @@ iptables -F
 iptables -t nat -F
 iptables -X
 
-# ✅ Default: DROP everything by default
+# Default: DROP all forwarding by default
 iptables -P FORWARD DROP
 
-# ✅ Allow return traffic (global to country)
+# Allow return traffic (global -> country)
 iptables -A FORWARD -i eth1 -o eth0 -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-# ❌ Block all country → global traffic (172.18.x → 172.19.x)
-iptables -A FORWARD -s 172.18.0.0/16 -d 172.19.0.0/16 -j DROP
+# Allow Tor outbound ports from country to anywhere (adjust as needed)
+iptables -A FORWARD -s 172.18.0.0/16 -p tcp --dport 9001 -j ACCEPT
+iptables -A FORWARD -s 172.18.0.0/16 -p tcp --dport 9050 -j ACCEPT
+iptables -A FORWARD -s 172.18.0.0/16 -p tcp --dport 9051 -j ACCEPT
 
-# 🧪 Optional: Log dropped attempts
+# Log attempts before dropping (optional)
 iptables -A FORWARD -s 172.18.0.0/16 -d 172.19.0.0/16 -j LOG --log-prefix "Blocked country → global: "
+
+# Drop all other direct traffic from country to global
+iptables -A FORWARD -s 172.18.0.0/16 -d 172.19.0.0/16 -j DROP
 
 # Keep container alive
 tail -f /dev/null
