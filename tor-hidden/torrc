@@ -1,0 +1,3 @@
+HiddenServiceDir /var/lib/tor/hidden_service/
+HiddenServicePort 80 172.19.0.30:80  # Points to your real service
+Log notice stdout

@@ -1,16 +1,21 @@
-version: '3.8'
-
 networks:
-  country_net:
-    driver: bridge
+  censored_net:  # Client network (country)
     ipam:
       config:
-        - subnet: 172.18.0.0/16
-  global_net:
-    driver: bridge
+        - subnet: 172.18.1.0/24
+          gateway: 172.18.1.1
+
+  tor_net:       # Tor network
     ipam:
       config:
-        - subnet: 172.19.0.0/16
+        - subnet: 172.18.2.0/24
+          gateway: 172.18.2.1
+
+  global_net:    # External services
+    ipam:
+      config:
+        - subnet: 172.19.0.0/24
+          gateway: 172.19.0.1
 
 services:
   client:
@@ -18,13 +23,8 @@ services:
       context: .
       dockerfile: client/Dockerfile
     networks:
-      country_net:
-        ipv4_address: 172.18.0.10
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-    depends_on:
-      - tor-proxy
+      censored_net:
+        ipv4_address: 172.18.1.10
 
   firewall:
     build:
@@ -34,19 +34,19 @@ services:
       - NET_ADMIN
       - NET_RAW
     networks:
-      country_net:
-        ipv4_address: 172.18.0.254
+      censored_net:
+        ipv4_address: 172.18.1.100  # Changed from .254
       global_net:
-        ipv4_address: 172.19.0.254
+        ipv4_address: 172.19.0.100  # Changed from .254
 
   tor-proxy:
     build:
       context: ./tor-proxy
     networks:
-      country_net:
-        ipv4_address: 172.18.0.20
-      global_net:
-        ipv4_address: 172.19.0.20
+      censored_net:
+        ipv4_address: 172.18.1.20
+      tor_net:
+        ipv4_address: 172.18.2.20
     cap_add:
       - NET_ADMIN
       - NET_RAW
@@ -62,21 +62,14 @@ services:
       - NET_ADMIN
       - NET_RAW
 
-  suricata:
-      image: jasonish/suricata:latest
-      networks:
-        country_net:
-          ipv4_address: 172.18.0.40
-      volumes:
-        - ./suricata/config:/etc/suricata
-        - ./suricata/logs:/var/log/suricata
-      cap_add:
-        - NET_ADMIN
-        - NET_RAW
-        - SYS_NICE
-      environment:
-        - INTERFACE=eth0
-      command: ["-i", "eth0", "-c", "/etc/suricata/suricata.yaml", "-S", "/etc/suricata/tor.rules"]
-      depends_on:
-        - firewall
-      restart: unless-stopped
+  hidden-service:
+    build:
+      context: ./tor-hidden
+    networks:
+      tor_net:
+        ipv4_address: 172.18.2.30
+      global_net:
+        ipv4_address: 172.19.0.40  # Changed from 172.19.0.30 to avoid conflict
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW

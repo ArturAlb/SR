@@ -3,34 +3,35 @@
 # Enable IP forwarding
 sysctl -w net.ipv4.ip_forward=1
 
-# Flush all existing rules
+# Flush existing rules
 iptables -F
 iptables -t nat -F
 iptables -X
 
-# Default: DROP all forwarding by default
+# Default policies
 iptables -P FORWARD DROP
+iptables -P INPUT DROP
+iptables -P OUTPUT ACCEPT
 
-# Allow return traffic (global -> country)
-iptables -A FORWARD -i eth1 -o eth0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+# Allow loopback
+iptables -A INPUT -i lo -j ACCEPT
+iptables -A OUTPUT -o lo -j ACCEPT
 
-# Allow Tor outbound ports from country to anywhere (adjust as needed)
-iptables -A FORWARD -s 172.18.0.0/16 -p tcp --dport 9001 -j ACCEPT
-iptables -A FORWARD -s 172.18.0.0/16 -p tcp --dport 9050 -j ACCEPT
-iptables -A FORWARD -s 172.18.0.0/16 -p tcp --dport 9051 -j ACCEPT
+# --- Network Segmentation Rules ---
+# Allow established/related traffic
+iptables -A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-# Log attempts before dropping (optional)
-iptables -A FORWARD -s 172.18.0.0/16 -d 172.19.0.0/16 -j LOG --log-prefix "Blocked country → global: "
+# Allow client → Tor proxy (SOCKS5)
+iptables -A FORWARD -i eth0 -o eth0 -s 172.18.1.0/24 -d 172.18.1.20 -p tcp --dport 9050 -j ACCEPT
 
-# Drop all other direct traffic from country to global
-iptables -A FORWARD -s 172.18.0.0/16 -d 172.19.0.0/16 -j DROP
+# Allow Tor proxy → Hidden service (Tor network)
+iptables -A FORWARD -i eth1 -o eth1 -s 172.18.2.20 -d 172.18.2.30 -p tcp --dport 9001 -j ACCEPT
 
-# Mirror traffic to Suricata
-iptables -I FORWARD -j NFQUEUE --queue-num 0
+# Block all other client → global traffic
+iptables -A FORWARD -s 172.18.1.0/24 -d 172.19.0.0/24 -j LOG --log-prefix "BLOCKED_CLIENT_GLOBAL: "
+iptables -A FORWARD -s 172.18.1.0/24 -d 172.19.0.0/24 -j DROP
 
-# Block based on Suricata alerts (assuming Suricata uses NFQ)
-iptables -A INPUT -j NFQUEUE --queue-num 0
-iptables -A OUTPUT -j NFQUEUE --queue-num 0
 
-# Keep container alive
+
+# Keep container running
 tail -f /dev/null
