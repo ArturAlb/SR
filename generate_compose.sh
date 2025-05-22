@@ -120,7 +120,6 @@ write_censor() {
         ipv4_address: 11.1.0.254
       tor_net:
         ipv4_address: 10.1.0.253
-    command: ["--af-packet"]
     tty: true
 
 EOF

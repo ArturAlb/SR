@@ -1,3 +1,0 @@
-drop tls any any -> any any (msg:"Tor TLS Detected (ClientHello)"; tls.sni; content:"torproject.org"; nocase; sid:1000001; rev:1;)
-
-
