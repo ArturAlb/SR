@@ -1,6 +1,15 @@
 version: '3.8'
 
 services:
+  censor1:
+    image: handsonsecurity/seed-ubuntu:large
+    container_name: censor1
+    privileged: true
+    network_mode: host
+    tty: true
+    volumes:
+      - ./censor1:/censor
+    working_dir: /censor
   client:
     image: handsonsecurity/seed-ubuntu:large
     container_name: client-10.1.2.1

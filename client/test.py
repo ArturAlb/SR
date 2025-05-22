@@ -25,16 +25,18 @@ relay_cert = 'certs/relay1.crt'
 ciphertext = encrypt_with_tls_cert(relay_cert, json_middle)
 # ciphertext is a dict (enc_key, iv, ciphertext)
 
+# Add 'is_tor' flag to the outermost message
+censor_outer = {
+    "is_tor": True,
+    "payload": ciphertext
+}
+
 # Serialize final payload to send (as JSON)
-final_payload = json.dumps(ciphertext).encode('utf-8')
+final_payload = json.dumps(censor_outer).encode('utf-8')
 
-# Send it
-context = ssl.create_default_context()
-context.check_hostname = False
-context.verify_mode = ssl.CERT_NONE
-
-with socket.create_connection((relay_ip, relay_port)) as sock:
-    with context.wrap_socket(sock, server_hostname=relay_ip) as ssock:
-        ssock.sendall(json.dumps(ciphertext).encode('utf-8'))
-        print("[+] Encrypted onion message sent")
+# Send it over plain TCP (no TLS) so the censor can see the is_tor flag
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    sock.connect((relay_ip, relay_port))
+    sock.sendall(final_payload)
+    print("[+] Encrypted onion message sent (with plaintext is_tor flag over TCP)")
 
