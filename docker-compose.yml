@@ -25,26 +25,14 @@ services:
     networks:
       censored_net:
         ipv4_address: 172.18.1.10
-
-  firewall:
-    build:
-      context: .
-      dockerfile: firewall/Dockerfile
     cap_add:
       - NET_ADMIN
       - NET_RAW
-    networks:
-      censored_net:
-        ipv4_address: 172.18.1.100  # Changed from .254
-      global_net:
-        ipv4_address: 172.19.0.100  # Changed from .254
 
   tor-proxy:
     build:
       context: ./tor-proxy
     networks:
-      censored_net:
-        ipv4_address: 172.18.1.20
       tor_net:
         ipv4_address: 172.18.2.20
     cap_add:
@@ -76,20 +64,24 @@ services:
 
 
   suricata:
-      image: jasonish/suricata:latest
-      networks:
-        censored_net:
-          ipv4_address: 172.18.1.200 
-      volumes:
-        - ./suricata/config:/etc/suricata
-        - ./suricata/logs:/var/log/suricata
-      cap_add:
-        - NET_ADMIN
-        - NET_RAW
-        - SYS_NICE
-      environment:
-        - INTERFACE=eth0
-      command: ["-i", "eth0", "-c", "/etc/suricata/suricata.yaml", "-S", "/etc/suricata/rules/tor.rules"]
-      depends_on:
-        - firewall
-      restart: unless-stopped
+    build:
+      context: ./suricata
+      dockerfile: Dockerfile
+    networks:
+      censored_net:
+        ipv4_address: 172.18.1.200 
+      tor_net:
+        ipv4_address: 172.18.2.200
+    volumes:
+      - ./suricata/config:/etc/suricata
+      - ./suricata/logs:/var/log/suricata
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+      - SYS_NICE
+    environment:
+      - INTERFACE=eth0
+    sysctls:
+      net.ipv4.ip_forward: 1
+    restart: unless-stopped
+

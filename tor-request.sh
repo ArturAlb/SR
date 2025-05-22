@@ -17,4 +17,4 @@ echo "Discovered .onion address: $ONION_ADDRESS"
 echo "Making request through Tor proxy..."
 
 # Make the curl request through the client container
-docker exec sr-client-1 curl --socks5-hostname 172.18.1.20:9050 -v "http://$ONION_ADDRESS"
+docker exec sr-client-1 curl --socks5-hostname 172.18.2.20:9050 -v "http://$ONION_ADDRESS"

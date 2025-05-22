@@ -1,4 +1,4 @@
-SocksPort 172.18.1.20:9050  # Accessible to clients
+SocksPort 172.18.2.20:9050  # Accessible to clients
 SocksPolicy accept 172.18.1.0/24
 Log notice stdout
 ExitPolicy reject *:*  # Only allow .onion access

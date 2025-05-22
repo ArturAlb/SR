@@ -1,4 +1,4 @@
-FROM alpine:latest
+fROM alpine:latest
 
 RUN apk add --no-cache tor curl
 
@@ -8,4 +8,5 @@ EXPOSE 9050
 
 USER tor
 
-CMD ["tor", "-f", "/etc/tor/torrc"]
+CMD /bin/sh -c "tor -f /etc/tor/torrc"
+
