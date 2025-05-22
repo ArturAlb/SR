@@ -1,59 +1,90 @@
-import ssl
-import socket
+import asyncio
 import json
 from decrypt_file import decrypt_with_tls_key
+from aiortc import RTCPeerConnection, RTCSessionDescription
+from signaling import post_signal, wait_for_signal
+import sys
+KEY = "relay/certs/exit1.key"
 
-HOST = '0.0.0.0'  # Bind to all interfaces
-PORT = 443  # Use port 443 for TLS
-CERT = "/relay/certs/exit1.crt"
-KEY = "/relay/certs/exit1.key"
+def log(msg):
+    print(f"[EXIT] {msg}", file=sys.stderr)
 
-# Set up SSL context for server
-context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-context.load_cert_chain(certfile=CERT, keyfile=KEY)
+async def exit_server():
+    pc = RTCPeerConnection()
+    received_data = None
 
-# Function to handle the received message
-def handle_message(message):
-    print(f"[+] Received message: {message}")
+    @pc.on("datachannel")
+    def on_datachannel(channel):
+        log("[EXIT] Data channel created")
+        @channel.on("open")
+        def on_open():
+            log("[EXIT] Data channel open event triggered")
+        @channel.on("message")
+        def on_message(message):
+            log(f"[EXIT] on_message called with: {repr(message)}")
+            nonlocal received_data
+            log("Exit node received message via WebRTC")
+            received_data = message
+            asyncio.ensure_future(handle_message(message))
 
-# Set up the server to accept connections
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-    sock.bind((HOST, PORT))
-    sock.listen(5)
-    print(f"[+] TLS server listening on port {PORT}...")
+    # Wait for offer from relay via signaling server
+    import os
+    EXIT_ID = os.environ.get("EXIT_ID", "exit1")
+    print(f"[EXIT] Waiting for offer via signaling key: {EXIT_ID}", file=sys.stderr)
+    offer_data = None
+    while offer_data is None:
+        await asyncio.sleep(2)
+        offer_data = wait_for_signal(EXIT_ID, expected_type="offer")
+    # Register datachannel handler BEFORE setting remote description
+    @pc.on("datachannel")
+    def on_datachannel(channel):
+        log("[EXIT] Data channel created")
+        @channel.on("open")
+        def on_open():
+            log("[EXIT] Data channel open event triggered")
+        @channel.on("message")
+        def on_message(message):
+            log(f"[EXIT] on_message called with: {repr(message)}")
+            nonlocal received_data
+            log("Exit node received message via WebRTC")
+            received_data = message
+            asyncio.ensure_future(handle_message(message))
 
+    offer = RTCSessionDescription(sdp=offer_data['sdp'], type=offer_data['type'])
+    await pc.setRemoteDescription(offer)
+    log("[EXIT] Remote description set for offer")
+
+    # Create answer and send to signaling server
+    answer = await pc.createAnswer()
+    await pc.setLocalDescription(answer)
+    post_signal("relay1", {"sdp": pc.localDescription.sdp, "type": pc.localDescription.type})
+    print(f"[EXIT] Answer sent to relay1", file=sys.stderr)
+
+    # Wait for message to be received and processed
+    while received_data is None:
+        await asyncio.sleep(1)
+    # Keep connection open for more messages. To close, call await pc.close() manually.
     while True:
-        # Accept a new connection
-        conn, addr = sock.accept()
-        with conn:
-            print(f"[+] Connection from {addr}")
+        await asyncio.sleep(10)
+        # Optionally, add logic to process more messages
 
-            # Wrap the connection with SSL context for secure communication
-            with context.wrap_socket(conn, server_side=True) as ssock:
-                # Receive the encrypted data (as JSON string)
-                data = ssock.recv(4096)
+async def handle_message(message):
+    try:
+        enc_dict = json.loads(message.decode('utf-8'))
+        plaintext = decrypt_with_tls_key(KEY, enc_dict)
+        try:
+            json_data = json.loads(plaintext.decode('utf-8'))
+            msg = json_data.get('message')
+            if msg:
+                print(f"[EXIT] Final message: {msg}", file=sys.stderr)
+        except json.JSONDecodeError:
+            log(f"Final message (not JSON): {plaintext.decode('utf-8', errors='replace')}")
+    except Exception as e:
+        log(f"Decryption failed: {e}")
 
-                if data:
-                    print(f"[+] Received encrypted data ({len(data)} bytes)")
-
-                    try:
-                        # Parse the received JSON into a dict
-                        enc_dict = json.loads(data.decode('utf-8'))
-                        # Decrypt the layer using the server's private key
-                        plaintext = decrypt_with_tls_key(KEY, enc_dict)
-
-                        # Try to parse the decrypted plaintext as JSON
-                        try:
-                            json_data = json.loads(plaintext.decode('utf-8'))
-                            print("[+] Decrypted JSON message:", json_data)
-                            message = json_data.get('message')
-                            if message:
-                                handle_message(message)
-                            else:
-                                print("[!] Missing 'message' in the received data.")
-                        except json.JSONDecodeError:
-                            # Not JSON, treat as final message
-                            print("[+] Final message (not JSON):", plaintext.decode('utf-8', errors='replace'))
-                    except Exception as e:
-                        print("[!] Decryption failed:", str(e))
-
+if __name__ == "__main__":
+    import asyncio
+    async def main():
+        while True:
+            await exit_server()
+    asyncio.run(main())

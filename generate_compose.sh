@@ -62,8 +62,26 @@ write_service_block() {
     build: ./build/${name}
     container_name: ${container_name}
     tty: true
+    stdin_open: true
+    command: ["/bin/bash", "-c", "python3 /client/test.py; tail -f /dev/null"]
     cap_add:
       - NET_ADMIN
+EOF
+
+  if [[ $name == relay* ]]; then
+    cat <<EOF >> "$COMPOSE_FILE"
+    environment:
+      - RELAY_ID=${name}
+EOF
+  elif [[ $name == exit_node* ]]; then
+    exit_id="exit${name#exit_node}"
+    cat <<EOF >> "$COMPOSE_FILE"
+    environment:
+      - EXIT_ID=${exit_id}
+EOF
+  fi
+
+  cat <<EOF >> "$COMPOSE_FILE"
     networks:
       ${net}:
         ipv4_address: ${ip}
@@ -152,8 +170,40 @@ EOF
 # ======================
 
 prepare_build_dirs
+
+# ======================
+# SIGNALING SERVER SETUP
+# ======================
+# Generate certs for signaling server
+cd "$UTILS_DIR/signaling_server"
+bash generate_cert.sh
+cd "$BASE_DIR"
+
+# Build context for signaling server
+create_signaling_server_context() {
+  local context="$BUILD_DIR/signaling_server"
+  mkdir -p "$context"
+  cp -r "$UTILS_DIR/signaling_server/." "$context/"
+}
+
+write_signaling_server_block() {
+  cat <<EOF >> "$COMPOSE_FILE"
+  signaling_server:
+    build: ./build/signaling_server
+    container_name: signaling_server
+    ports:
+      - "8443:8443"
+    networks:
+      client_net:
+        ipv4_address: 11.1.0.10
+      tor_net:
+        ipv4_address: 10.1.0.10
+EOF
+}
 write_header
+create_signaling_server_context
 write_client
+write_signaling_server_block
 write_relays
 write_exits
 write_hidden_service
