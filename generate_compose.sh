@@ -72,7 +72,7 @@ EOF
 }
 
 write_client() {
-  create_build_context "client" "${UTILS_DIR}/client" "/client"
+  create_build_context "client" "${UTILS_DIR}/client" "/volumes"
   write_service_block "client" "client-11.1.0.2" "11.1.0.2" "client_net"
 }
 
@@ -80,7 +80,7 @@ write_relays() {
   for i in $(seq 1 $NUM_RELAYS); do
     ip="10.1.0.$((i+1))"
     name="relay${i}"
-    create_build_context "$name" "${UTILS_DIR}/relay" "/relay"
+    create_build_context "$name" "${UTILS_DIR}/relay" "/volumes"
     write_service_block "$name" "${name}-${ip}" "$ip" "tor_net"
   done
 }
@@ -89,16 +89,16 @@ write_exits() {
   for i in $(seq 1 $NUM_EXITS); do
     ip="10.1.1.${i}"
     name="exit_node${i}"
-    create_build_context "$name" "${UTILS_DIR}/exit" "/relay"
+    create_build_context "$name" "${UTILS_DIR}/exit" "/volumes"
     # Also add shared hidden service certs if present
-    mkdir -p "${BUILD_DIR}/${name}/relay/certs/hidden_service"
-    cp -r "${UTILS_DIR}/hidden_service/certs/." "${BUILD_DIR}/${name}/relay/certs/hidden_service" 2>/dev/null
+    mkdir -p "${BUILD_DIR}/${name}/volumes/certs/hidden_service"
+    cp -r "${UTILS_DIR}/hidden_service/certs/." "${BUILD_DIR}/${name}/volumes/certs/hidden_service" 2>/dev/null
     write_service_block "$name" "${name}-${ip}" "$ip" "tor_net"
   done
 }
 
 write_hidden_service() {
-  create_build_context "hidden_service" "${UTILS_DIR}/hidden_service" "/relay"
+  create_build_context "hidden_service" "${UTILS_DIR}/hidden_service" "/volumes"
   write_service_block "hidden_service" "hidden_service-10.1.2.2" "10.1.2.2" "tor_net"
 }
 

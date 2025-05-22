@@ -1,21 +1,31 @@
 #!/bin/bash
 
-# List of relay names
-relays=(relay exit hidden_service)
+echo "[*] Generating certificates for all components in build/ (except 'censor')"
 
-# Create certs for each relay
-for relay in "${relays[@]}"; do
-  echo "[+] Generating certificate for $relay"
+# Iterate through all directories inside build/
+for dir in build/*/; do
+  # Get base name (e.g., relay1, exit1, etc.)
+  name=$(basename "$dir")
 
-  mkdir -p ./utils/$relay/certs
+  # Skip 'censor' directory
+  if [ "$name" == "censor" ]; then
+    echo "[!] Skipping $name"
+    continue
+  fi
 
+  echo "[+] Generating certificate for $name"
+
+  # Create certs directory if it doesn't exist
+  mkdir -p "$dir/volumes/certs"
+
+  # Generate cert and key with standardized names
   openssl req -x509 -newkey rsa:2048 \
-    -keyout ./utils/$relay/certs/$relay.key \
-    -out ./utils/$relay/certs/$relay.crt \
+    -keyout "$dir/volumes/certs/cert.key" \
+    -out "$dir/volumes/certs/cert.crt" \
     -days 365 \
     -nodes \
-    -subj "/CN=./utils/$relay"
+    -subj "/CN=$name"
 done
 
-echo "[✓] All certificates generated."
+echo "[✓] All certificates generated as cert.key and cert.crt."
 
