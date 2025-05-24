@@ -5,8 +5,8 @@ from decrypt_file import decrypt_with_tls_key  # Assuming this is your decryptio
 
 HOST = '0.0.0.0'  # Bind to all interfaces
 PORT = 443  # Use port 443 for TLS
-CERT = "/relay/certs/relay1.crt"
-KEY = "/relay/certs/relay1.key"
+CERT = "/volumes/certs/cert.crt"
+KEY = "/volumes/certs/cert.key"
 
 # Set up SSL context for server
 context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)

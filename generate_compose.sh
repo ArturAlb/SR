@@ -5,6 +5,8 @@
 # ======================
 NUM_RELAYS=${1:-6}
 NUM_EXITS=${2:-3}
+NUM_CLIENTS=${3:-3}
+NUM_TRUE_TOR_CLIENTS=${4:-1}
 
 BASE_DIR=$(pwd)
 BUILD_DIR="${BASE_DIR}/build"
@@ -71,9 +73,23 @@ ${extra}
 EOF
 }
 
-write_client() {
-  create_build_context "client" "${UTILS_DIR}/client" "/volumes"
-  write_service_block "client" "client-11.1.0.2" "11.1.0.2" "client_net"
+# ======================
+# SPECIFIC SERVICES 
+# ======================
+
+write_clients() {
+  for i in $(seq 1 $NUM_CLIENTS); do
+    ip="11.1.0.$((i+1))"
+    name="client${i}"
+
+    if [[ i -le "$NUM_TRUE_TOR_CLIENTS" ]]; then
+        create_build_context "$name" "${UTILS_DIR}/true_client" "/volumes"
+    else
+        create_build_context "$name" "${UTILS_DIR}/client" "/volumes"
+    fi
+
+    write_service_block "$name" "${name}-${ip}" "$ip" "client_net"
+  done
 }
 
 write_relays() {
@@ -153,7 +169,7 @@ EOF
 
 prepare_build_dirs
 write_header
-write_client
+write_clients
 write_relays
 write_exits
 write_hidden_service
