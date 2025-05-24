@@ -27,7 +27,7 @@ ciphertext = encrypt_with_tls_cert(relay_cert, json_middle)
 
 # Add 'is_tor' flag to the outermost message
 censor_outer = {
-    "is_tor": False,
+    "is_tor": True,
     "payload": ciphertext
 }
 
