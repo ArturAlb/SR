@@ -18,12 +18,28 @@ print(' '.join(services.keys()))
 ")
 
 for service in $SERVICE_NAMES; do
-  if [[ "$service" == *client* || "$service" == "censor" ]]; then
+  if [[ "$service" == "censor" ]]; then
     echo "[!] Skipping $service"
     continue
   fi
 
   echo "[+] Generating cert for $service"
+
+  # Create cert directory
+  CERT_DIR="build/$service/volumes/certs"
+  mkdir -p "$CERT_DIR"
+
+  # Generate cert
+  openssl req -x509 -newkey rsa:2048 \
+      -keyout "$CERT_DIR/cert.key" \
+      -out "$CERT_DIR/cert.crt" \
+      -days 365 \
+      -nodes \
+      -subj "/CN=$service"
+
+  if [[ "$service" == *client* ]]; then
+      continue
+  fi
 
   # Get IP using Python
   IP=$(python3 -c "
@@ -48,17 +64,6 @@ print(ip)
     TYPE="unknown"
   fi
 
-  # Create cert directory
-  CERT_DIR="build/$service/volumes/certs"
-  mkdir -p "$CERT_DIR"
-
-  # Generate cert
-  openssl req -x509 -newkey rsa:2048 \
-    -keyout "$CERT_DIR/cert.key" \
-    -out "$CERT_DIR/cert.crt" \
-    -days 365 \
-    -nodes \
-    -subj "/CN=$service"
 
   # Encode the cert in base64
   CERT_BASE64=$(base64 -w 0 "$CERT_DIR/cert.crt")
