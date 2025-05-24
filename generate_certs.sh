@@ -1,68 +1,83 @@
 #!/bin/bash
 
-echo "[*] Generating certificates for all components in build/"
+echo "[*] Generating certificates for all components in docker-compose.yml"
+COMPOSE_FILE="docker-compose.yml"
+TEMP_DIRECTORY_JSON="directory.json"
+CERTS_JSON_ENTRIES=()
 
-DIRECTORY_FILE_NAME="directory.json"
-TEMP_ENTRIES=()
+# Convert YAML to JSON (yq python version uses -y to preserve YAML)
+yq -y '.' "$COMPOSE_FILE" > compose.json
 
-# Iterate through all directories inside build/
-for dir in build/*/; do
-  # Get base name (e.g., relay1, exit1, etc.)
-  name=$(basename "$dir")
+# Extract service names using Python
+SERVICE_NAMES=$(python3 -c "
+import sys, yaml
+with open('compose.json') as f:
+    data = yaml.safe_load(f)
+services = data.get('services', {})
+print(' '.join(services.keys()))
+")
 
-  # Skip 'censor' directory
-  if [[ "$name" == "censor" || "$name" == *client* ]]; then
-    echo "[!] Skipping $name"
+for service in $SERVICE_NAMES; do
+  if [[ "$service" == *client* || "$service" == "censor" ]]; then
+    echo "[!] Skipping $service"
     continue
   fi
 
-  echo "[+] Generating certificate for $name"
+  echo "[+] Generating cert for $service"
 
-  # Create certs directory if it doesn't exist
-  mkdir -p "${dir}volumes/certs"
+  # Get IP using Python
+  IP=$(python3 -c "
+import sys, yaml
+with open('compose.json') as f:
+    data = yaml.safe_load(f)
+ip = data['services']['$service'].get('networks', {}).get('tor_net', {}).get('ipv4_address', '')
+print(ip)
+  ")
 
-  # Generate cert and key with standardized names
-  openssl req -x509 -newkey rsa:2048 \
-    -keyout "${dir}volumes/certs/cert.key" \
-    -out "${dir}volumes/certs/cert.crt" \
-    -days 365 \
-    -nodes \
-    -subj "/CN=$name"
+  if [[ -z "$IP" ]]; then
+    echo "[!] No IP found for $service, skipping"
+    continue
+  fi
 
-  # Read and base64-encode the cert
-  CERT_CONTENT=$(base64 -w 0 "${dir}volumes/certs/cert.crt")
-
-  # Detect type 
-  if [[ "$name" == relay* ]]; then
+  # Determine type
+  if [[ "$service" == relay* ]]; then
     TYPE="relay"
-  elif [[ "$name" == exit* ]]; then
+  elif [[ "$service" == exit* ]]; then
     TYPE="exit"
   else
     TYPE="unknown"
   fi
 
-  # Create a JSON entry
-  ENTRY="{\"name\": \"$name\", \"type\": \"$TYPE\", \"cert_base64\": \"$CERT_CONTENT\"}"
-  TEMP_ENTRIES+=("$ENTRY")
+  # Create cert directory
+  CERT_DIR="build/$service/volumes/certs"
+  mkdir -p "$CERT_DIR"
+
+  # Generate cert
+  openssl req -x509 -newkey rsa:2048 \
+    -keyout "$CERT_DIR/cert.key" \
+    -out "$CERT_DIR/cert.crt" \
+    -days 365 \
+    -nodes \
+    -subj "/CN=$service"
+
+  # Encode the cert in base64
+  CERT_BASE64=$(base64 -w 0 "$CERT_DIR/cert.crt")
+
+  ENTRY="{\"name\": \"$service\", \"type\": \"$TYPE\", \"ip\": \"$IP\", \"cert_base64\": \"$CERT_BASE64\"}"
+  CERTS_JSON_ENTRIES+=("$ENTRY")
 done
 
-# Join entries into a JSON array
-echo "[" > "$DIRECTORY_FILE_NAME"
-printf "  %s\n" "$(IFS=,; echo "${TEMP_ENTRIES[*]}")" >> "$DIRECTORY_FILE_NAME"
-echo "]" >> "$DIRECTORY_FILE_NAME"
+# Output directory.json
+echo "[" > "$TEMP_DIRECTORY_JSON"
+printf "  %s\n" "$(IFS=,; echo "${CERTS_JSON_ENTRIES[*]}")" >> "$TEMP_DIRECTORY_JSON"
+echo "]" >> "$TEMP_DIRECTORY_JSON"
 
-# Copy file to clients
-for dir in build/*/; do
-  # Get base name 
-  name=$(basename "$dir")
-
-  if [[ "$name" == *client* ]]; then
-      cp "./$DIRECTORY_FILE_NAME" "${dir}volumes/"
-  fi
+# Copy to client(s)
+for client_dir in build/*client*/; do
+  cp "$TEMP_DIRECTORY_JSON" "${client_dir}volumes/"
 done
 
-# Remove the original directory file
-rm "./$DIRECTORY_FILE_NAME"
+# Clean up
+rm compose.json "$TEMP_DIRECTORY_JSON"
+echo "[✓] Certificates and directory.json generated!"
 
-echo "[✓] All certificates generated."
-echo "[✓] Directory file created." 
