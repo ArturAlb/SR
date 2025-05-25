@@ -5,7 +5,7 @@ import base64
 from cypher_creator import encrypt_with_tls_cert
 
 # Load directory info
-with open('volumes/directory.json', 'r') as f:
+with open('/volumes/directory.json', 'r') as f:
     directory = json.load(f)
 
 # Separate nodes by type
@@ -57,8 +57,11 @@ outermost = {
 }
 final_payload = json.dumps(outermost).encode('utf-8')
 
-# Send over TCP to the entry relay
+# Connect using plain TCP (no TLS)
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     sock.connect((entry_relay['ip'], 443))
+    print(f"[+] Connected to entry relay at {entry_relay['ip']}:443 over plain TCP")
     sock.sendall(final_payload)
-    print("[+] Encrypted onion message sent to entry relay")
+    sock.shutdown(socket.SHUT_WR)
+    print("[+] Encrypted onion message sent to entry relay over plain TCP")
+
