@@ -1,0 +1,162 @@
+
+services:
+  client1:
+    build: ./build/client1
+    container_name: client1-11.1.0.2
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      client_net:
+        ipv4_address: 11.1.0.2
+
+  client2:
+    build: ./build/client2
+    container_name: client2-11.1.0.3
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      client_net:
+        ipv4_address: 11.1.0.3
+
+  client3:
+    build: ./build/client3
+    container_name: client3-11.1.0.4
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      client_net:
+        ipv4_address: 11.1.0.4
+
+  relay1:
+    build: ./build/relay1
+    container_name: relay1-10.1.0.2
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.0.2
+
+  relay2:
+    build: ./build/relay2
+    container_name: relay2-10.1.0.3
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.0.3
+
+  relay3:
+    build: ./build/relay3
+    container_name: relay3-10.1.0.4
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.0.4
+
+  relay4:
+    build: ./build/relay4
+    container_name: relay4-10.1.0.5
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.0.5
+
+  relay5:
+    build: ./build/relay5
+    container_name: relay5-10.1.0.6
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.0.6
+
+  relay6:
+    build: ./build/relay6
+    container_name: relay6-10.1.0.7
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.0.7
+
+  exit_node1:
+    build: ./build/exit_node1
+    container_name: exit_node1-10.1.1.1
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.1.1
+
+  exit_node2:
+    build: ./build/exit_node2
+    container_name: exit_node2-10.1.1.2
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.1.2
+
+  exit_node3:
+    build: ./build/exit_node3
+    container_name: exit_node3-10.1.1.3
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.1.3
+
+  hidden_service:
+    build: ./build/hidden_service
+    container_name: hidden_service-10.1.2.2
+    tty: true
+    cap_add:
+      - NET_ADMIN
+    networks:
+      tor_net:
+        ipv4_address: 10.1.2.2
+
+  censor:
+    build: ./build/censor
+    container_name: censor-11.1.0.254-10.1.0.253
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    networks:
+      client_net:
+        ipv4_address: 11.1.0.254
+      tor_net:
+        ipv4_address: 10.1.0.253
+    tty: true
+
+
+networks:
+  tor_net:
+    name: tor_net-10.1.0.0
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.1.0.0/16
+          gateway: 10.1.0.1
+
+  client_net:
+    name: client_net-11.1.0.0
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 11.1.0.0/24
+          gateway: 11.1.0.1
