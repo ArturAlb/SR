@@ -61,6 +61,9 @@ outermost = {
 }
 final_payload = json.dumps(outermost).encode('utf-8')
 
+
+sleep(3)  # Wait for relays to be ready
+
 # Connect using plain TCP (no TLS)
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     sock.connect((entry_relay['ip'], 443))
