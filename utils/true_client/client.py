@@ -1,12 +1,11 @@
 import socket
-import ssl
 import json
 import random
 import base64
 from cypher_creator import encrypt_with_tls_cert
 
 # Load directory info
-with open('/volumes/directory.json', 'r') as f:
+with open('volumes/directory.json', 'r') as f:
     directory = json.load(f)
 
 # Separate nodes by type
@@ -53,30 +52,13 @@ encrypted_entry = encrypt_with_tls_cert(entry_cert_path, json.dumps(entry_msg).e
 
 # Final payload sent over TCP 
 outermost = {
-    "is_tor": False,
+    "is_tor": True,
     "payload": encrypted_entry
 }
 final_payload = json.dumps(outermost).encode('utf-8')
 
-# Client cert and key paths
-CLIENT_CERT = "/volumes/certs/cert.crt"
-CLIENT_KEY = "/volumes/certs/cert.key"
-
-# Create SSL context for client (outgoing connection)
-context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-
-# Disable verification because of self signed certs
-context.check_hostname = False
-context.verify_mode = ssl.CERT_NONE
-
-context.load_cert_chain(certfile=CLIENT_CERT, keyfile=CLIENT_KEY)
-# If you have a custom CA, add it here:
-# context.load_verify_locations(cafile="/volumes/certs/ca.crt")
-
-# Connect and send over TLS to the entry relay
-with socket.create_connection((entry_relay['ip'], 443)) as sock:
-    with context.wrap_socket(sock, server_hostname=entry_relay['ip']) as ssock:
-        print(f"[+] TLS connection established to {entry_relay['ip']}:443")
-        ssock.sendall(final_payload)
-        ssock.shutdown(socket.SHUT_WR)
-        print("[+] Encrypted onion message sent to entry relay over TLS")
+# Send over TCP to the entry relay
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    sock.connect((entry_relay['ip'], 443))
+    sock.sendall(final_payload)
+    print("[+] Encrypted onion message sent to entry relay")

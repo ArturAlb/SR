@@ -1,79 +1,101 @@
 import ssl
 import socket
 import json
-from decrypt_file import decrypt_with_tls_key  # Assuming this is your decryption function
+from decrypt_file import decrypt_with_tls_key  # Your decryption function
 
-HOST = '0.0.0.0'  # Bind to all interfaces
-PORT = 443  # Use port 443 for TLS
-CERT = "/relay/certs/relay1.crt"
-KEY = "/relay/certs/relay1.key"
+HOST = '0.0.0.0'
+PORT = 443
+CERT = "/volumes/certs/cert.crt"
+KEY = "/volumes/certs/cert.key"
 
-# Set up SSL context for server
-context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-context.load_cert_chain(certfile=CERT, keyfile=KEY)
+# Server SSL context (for incoming connections)
+server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+server_context.load_cert_chain(certfile=CERT, keyfile=KEY)
 
-# Function to send message to the next relay over TLS
+# Disable verification because of self signed certs
+server_context.check_hostname = False
+server_context.verify_mode = ssl.CERT_NONE
+
+# Client SSL context (for forwarding to next relay)
+client_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+
+# Disable verification because of self signed certs
+client_context.check_hostname = False
+client_context.verify_mode = ssl.CERT_NONE
+
 def forward_to_next_relay(next_ip, next_port, message):
     try:
-        # Create a secure TLS connection to the next relay
-        next_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        
-        # Establish the TLS connection with the next relay
         with socket.create_connection((next_ip, next_port)) as sock:
-            with next_context.wrap_socket(sock, server_hostname=next_ip) as ssock:
+            with client_context.wrap_socket(sock, server_hostname=next_ip) as ssock:
                 print(f"[+] Forwarding message to {next_ip}:{next_port} over TLS")
-                
-                # Send the message (already in plaintext form)
                 ssock.sendall(message.encode())
-                print("[+] Message forwarded over TLS.")
+                ssock.shutdown(socket.SHUT_WR)
+                print("[+] Message forwarded and connection closed.")
     except Exception as e:
-        print(f"[!] Failed to forward message to {next_ip}: {str(e)}")
+        print(f"[!] Failed to forward message to {next_ip}: {e}")
 
-# Set up the server to accept connections
+def recv_all_tls(sock):
+    # TLS socket recv: same as regular, but you need to handle partial reads
+    buffer = b''
+    while True:
+        try:
+            chunk = sock.recv(4096)
+            if not chunk:
+                break
+            buffer += chunk
+        except ssl.SSLWantReadError:
+            continue
+        except Exception as e:
+            print(f"[!] Error receiving data: {e}")
+            break
+    return buffer
+
+# Main server loop
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     sock.bind((HOST, PORT))
     sock.listen(5)
-    print(f"[+] TLS server listening on port {PORT}...")
+    print(f"[+] TLS server listening on {HOST}:{PORT}...")
 
     while True:
-        # Accept a new connection
         conn, addr = sock.accept()
-        with conn:
-            print(f"[+] Connection from {addr}")
+        print(f"[+] Incoming connection from {addr}")
+        try:
+            with server_context.wrap_socket(conn, server_side=True) as tls_conn:
+                print(f"[+] TLS handshake completed with {addr}")
 
-            # Accept plain TCP connection (no SSL wrapping)
-            data = conn.recv(4096)
+                data = recv_all_tls(tls_conn)
+                if not data:
+                    print("[!] No data received; closing connection.")
+                    continue
 
-            if data:
                 print(f"[+] Received data ({len(data)} bytes)")
 
                 try:
-                    # Parse the received JSON into a dict
                     enc_dict = json.loads(data.decode('utf-8'))
-                    # Unwrap payload if present (for censor compatibility)
                     if "payload" in enc_dict:
                         enc_dict = enc_dict["payload"]
-                    # Decrypt the layer using the server's private key
+
                     plaintext = decrypt_with_tls_key(KEY, enc_dict)
                 except Exception as e:
-                    print(f"[!] Error processing received data: {e}")
+                    print(f"[!] Error decrypting or parsing data: {e}")
                     continue
 
                 try:
                     json_data = json.loads(plaintext.decode('utf-8'))
                     print("[+] Decrypted JSON message:", json_data)
 
-                    # Extract the next IP and message from the JSON data
                     next_ip = json_data.get('next_ip')
                     message = json_data.get('message')
 
                     if next_ip and message:
-                        # Forward to next relay (as JSON string)
                         forward_to_next_relay(next_ip, 443, json.dumps(message))
                     elif message:
-                        # If only a message is present, print it
                         print(f"[+] Final message: {message}")
                 except Exception as e:
                     print(f"[!] Error parsing decrypted plaintext as JSON: {e}")
-                # No finally block or stray indentation needed here
+
+        except ssl.SSLError as ssl_err:
+            print(f"[!] TLS error with connection from {addr}: {ssl_err}")
+        except Exception as ex:
+            print(f"[!] General error handling connection from {addr}: {ex}")
 
