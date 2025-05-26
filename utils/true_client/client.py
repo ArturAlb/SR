@@ -32,7 +32,7 @@ while True:
     try:
         choice = int(input("Select an entry relay by index: "))
         if 0 <= choice < len(relays):
-            entry_relay = relays[choice]  # Remove chosen relay from list
+            entry_relay = relays.pop(choice)  # Remove chosen relay from list
             break
         else:
             print("Invalid index. Try again.")
@@ -40,8 +40,9 @@ while True:
         print("Please enter a valid number.")
 
 # Pick a random middle relay from remaining relays
-middle_relay = relays[1]
-
+num = random.randint(0, len(relays) -1)
+middle_relay = relays[num]
+print("Middle relay: ", middle_relay['name'])
 exit_node = random.choice(exits)
 
 print(f"[+] Chosen path:\n  Entry: {entry_relay['name']} ({entry_relay['ip']})\n  Middle: {middle_relay['name']} ({middle_relay['ip']})\n  Exit: {exit_node['name']} ({exit_node['ip']})")
