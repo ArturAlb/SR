@@ -5,7 +5,7 @@ import ssl
 import socket
 import threading
 import asyncio
-
+import base64
 from decrypt_file import decrypt_with_tls_key  # Your decryption function
 
 # For WebRTC
@@ -120,8 +120,24 @@ def run_tor_server():
 
 # --- WebRTC Mode ---
 
+def write_temp_cert(cert_base64, name):
+    cert_path = f"/tmp/{name}.crt"
+    with open(cert_path, 'wb') as f:
+        f.write(base64.b64decode(cert_base64))
+    return cert_path
+
+
+""" with open('/volumes/directory.json', 'r') as f:
+    directory = json.load(f)
+relays = [entry for entry in directory if entry['type'] == 'relay']
+print(relays)
 RELAY_ID = os.getenv("RELAY_ID", "relay1")
-KEY_WEBRTC = f"relay/certs/{RELAY_ID}.key"
+print(RELAY_ID)
+obj = next((o for o in relays if o.get('name') == RELAY_ID), None)
+KEY_WEBRTC = write_temp_cert(obj['cert_base64'], obj['name']) """
+
+RELAY_ID = os.getenv("RELAY_ID", "relay1")
+KEY_WEBRTC = f"/volumes/certs/cert.key"
 
 def log(msg):
     print(f"[RELAY] {msg}", file=sys.stderr)
@@ -160,11 +176,11 @@ async def forward_to_next_relay_webrtc(next_ip, message):
         asyncio.ensure_future(send_on_open())
 
     ip_to_exit_id = {
-        "10.1.1.1": "exit1",
-        "10.1.1.2": "exit2",
-        "10.1.1.3": "exit3"
+        "10.1.1.1": "exit_node1",
+        "10.1.1.2": "exit_node2",
+        "10.1.1.3": "exit_node3"
     }
-    exit_id = ip_to_exit_id.get(next_ip, "exit1")
+    exit_id = ip_to_exit_id.get(next_ip, "exit_node1")
 
     offer = await pc.createOffer()
     await pc.setLocalDescription(offer)

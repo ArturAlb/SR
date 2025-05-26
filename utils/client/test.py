@@ -35,7 +35,9 @@ middle_msg = {
 json_middle = json.dumps(middle_msg).encode('utf-8')
 
 # Encrypt again for the current relay (hybrid)
-relay_cert = write_temp_cert(relays[0]['cert_base64'], relays[0]['name'])
+obj = next((o for o in relays if o.get('name') == "relay1"), None)
+
+relay_cert = write_temp_cert(obj['cert_base64'], obj['name'])
 print(relay_cert)
 ciphertext = encrypt_with_tls_cert(relay_cert, json_middle)
 
@@ -48,7 +50,7 @@ censor_outer = {
 final_payload = json.dumps(censor_outer).encode('utf-8')
 
 RELAY_KEY = "relay1"
-EXIT_KEY = "exit1"
+EXIT_KEY = "exit_node1"
 
 async def send_message_via_webrtc():
     pc = RTCPeerConnection()

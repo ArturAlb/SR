@@ -82,6 +82,10 @@ for client_dir in build/*client*/; do
   cp "$TEMP_DIRECTORY_JSON" "${client_dir}volumes/"
 done
 
+for client_dir in build/*relay*/; do
+  cp "$TEMP_DIRECTORY_JSON" "${client_dir}volumes/"
+done
+
 # Clean up
 rm compose.json "$TEMP_DIRECTORY_JSON"
 echo "[✓] Certificates and directory.json generated!"

@@ -4,14 +4,10 @@ from decrypt_file import decrypt_with_tls_key
 from aiortc import RTCPeerConnection, RTCSessionDescription
 from signaling import post_signal, wait_for_signal
 import sys
-KEY = "relay/certs/exit1.key"
+KEY = "/volumes/certs/cert.key"
 
 def log(msg):
     print(f"[EXIT] {msg}", file=sys.stderr)
-HOST = '0.0.0.0'  # Bind to all interfaces
-PORT = 443  # Use port 443 for TLS
-CERT = "/volumes/certs/cert.crt"
-KEY = "/volumes/certs/cert.key"
 
 async def exit_server():
     pc = RTCPeerConnection()
@@ -33,7 +29,7 @@ async def exit_server():
 
     # Wait for offer from relay via signaling server
     import os
-    EXIT_ID = os.environ.get("EXIT_ID", "exit1")
+    EXIT_ID = os.environ.get("EXIT_ID", "exit_node1")
     print(f"[EXIT] Waiting for offer via signaling key: {EXIT_ID}", file=sys.stderr)
     offer_data = None
     while offer_data is None:
