@@ -8,6 +8,10 @@ KEY = "relay/certs/exit1.key"
 
 def log(msg):
     print(f"[EXIT] {msg}", file=sys.stderr)
+HOST = '0.0.0.0'  # Bind to all interfaces
+PORT = 443  # Use port 443 for TLS
+CERT = "/volumes/certs/cert.crt"
+KEY = "/volumes/certs/cert.key"
 
 async def exit_server():
     pc = RTCPeerConnection()

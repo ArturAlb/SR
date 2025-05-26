@@ -4,6 +4,9 @@ from datetime import datetime
 
 LOG_FILE = "/var/log/censor.txt"  
 
+tor_servers = []
+tor_server_deterctor = {}
+
 def log_packet(action, ip_pkt, reason=None):
     timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')
     src = f"{ip_pkt.src}:{ip_pkt[TCP].sport}" if ip_pkt.haslayer(TCP) else ip_pkt.src
@@ -28,7 +31,24 @@ def process_packet(pkt):
         if tcp_payload:
             try:
                 payload_str = tcp_payload.decode(errors='ignore')
+                next_ip = scapy_pkt.dst
+                if next_ip in tor_servers:
+                    print(f"Already seen this IP in Tor servers: {next_ip}")
+                    log_packet("dropped", scapy_pkt, reason="Already seen this IP in Tor servers")
+                    pkt.drop()
+                    return
                 if '"is_tor": true' in payload_str.lower():
+                    print("IS TOR")
+                    if next_ip in tor_server_deterctor:
+                        tor_server_deterctor[next_ip] += 1
+                    else:
+                        tor_server_deterctor[next_ip] = 1
+
+                    # If the count reaches 5, add the IP to the tor_servers list
+                    if tor_server_deterctor[next_ip] >= 5:
+                        tor_servers.append(next_ip)
+                        print(f"Added {next_ip} to Tor servers list after 5 detections")
+
                     log_packet("dropped", scapy_pkt, reason="Detected is_tor: true")
                     pkt.drop()
                     return

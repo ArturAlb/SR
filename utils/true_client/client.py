@@ -19,6 +19,9 @@ if len(relays) < 2 or len(exits) == 0:
 
 # Randomly pick 2 relays and 1 exit node
 # entry_relay, middle_relay = random.sample(relays, 2)
+
+
+
 # Show menu to select entry relay
 print("┌─────────────────────────────────────────────┐")
 print("│ [*] Available entry relays                  │")
@@ -27,6 +30,7 @@ for i, relay in enumerate(relays):
     line = f"{i}) {relay['name']} ({relay['ip']})"
     print(f"│ {line:<44}│")
 print("└─────────────────────────────────────────────┘")
+
 
 # User selects one
 while True:
@@ -79,7 +83,7 @@ encrypted_entry = encrypt_with_tls_cert(entry_cert_path, json.dumps(entry_msg).e
 
 # Final payload sent over TCP 
 outermost = {
-    "is_tor": False,
+    "is_tor": True,
     "payload": encrypted_entry
 }
 final_payload = json.dumps(outermost).encode('utf-8')

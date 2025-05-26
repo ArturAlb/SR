@@ -8,4 +8,4 @@ pip install aiortc > /dev/null 2>&1
 pip install requests > /dev/null 2>&1
 
 # Keep container alive
-exec python3 /relay/print_message.py 
+exec python3 /volumes/print_message.py 
