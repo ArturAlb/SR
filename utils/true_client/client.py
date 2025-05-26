@@ -19,8 +19,29 @@ if len(relays) < 2 or len(exits) == 0:
 
 # Randomly pick 2 relays and 1 exit node
 # entry_relay, middle_relay = random.sample(relays, 2)
-entry_relay = relays[0]
-middle_relay = relays[1]
+
+
+
+# Show menu to select entry relay
+print("[*] Available entry relays:")
+for i, relay in enumerate(relays):
+    print(f"{i}: {relay['name']} ({relay['ip']})")
+
+# User selects one
+while True:
+    try:
+        choice = int(input("Select an entry relay by index: "))
+        if 0 <= choice < len(relays):
+            entry_relay = relays.pop(choice)  # Remove chosen relay from list
+            break
+        else:
+            print("Invalid index. Try again.")
+    except ValueError:
+        print("Please enter a valid number.")
+
+# Pick a random middle relay from remaining relays
+middle_relay = random.choice(relays)
+
 exit_node = random.choice(exits)
 
 print(f"[+] Chosen path:\n  Entry: {entry_relay['name']} ({entry_relay['ip']})\n  Middle: {middle_relay['name']} ({middle_relay['ip']})\n  Exit: {exit_node['name']} ({exit_node['ip']})")
@@ -61,7 +82,6 @@ outermost = {
 }
 final_payload = json.dumps(outermost).encode('utf-8')
 
-sleep(3)  # Wait for relays to be ready
 
 
 # Connect using plain TCP (no TLS)
@@ -70,7 +90,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
     print(f"[+] Connected to entry relay at {entry_relay['ip']}:443 over plain TCP")
     
     try:
-        while True:
             sock.sendall(final_payload)
             print("[+] Encrypted onion message sent to entry relay over plain TCP")
             sleep(2)  # Wait 2 seconds before sending the next message
