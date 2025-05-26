@@ -1,9 +1,10 @@
 import socket
-import ssl
 import json
 import random
 import base64
 from cypher_creator import encrypt_with_tls_cert
+
+from time import sleep
 
 # Load directory info
 with open('/volumes/directory.json', 'r') as f:
@@ -17,7 +18,32 @@ if len(relays) < 2 or len(exits) == 0:
     raise ValueError("Need at least 2 relays and 1 exit node")
 
 # Randomly pick 2 relays and 1 exit node
-entry_relay, middle_relay = random.sample(relays, 2)
+# entry_relay, middle_relay = random.sample(relays, 2)
+# Show menu to select entry relay
+print("┌─────────────────────────────────────────────┐")
+print("│ [*] Available entry relays                  │")
+print("┌─────────────────────────────────────────────┐")
+for i, relay in enumerate(relays):
+    line = f"{i}) {relay['name']} ({relay['ip']})"
+    print(f"│ {line:<44}│")
+print("└─────────────────────────────────────────────┘")
+
+# User selects one
+while True:
+    try:
+        choice = int(input("Select an entry relay by index: "))
+        if 0 <= choice < len(relays):
+            entry_relay = relays.pop(choice)  # Remove chosen relay from list
+            break
+        else:
+            print("Invalid index. Try again.")
+    except ValueError:
+        print("Please enter a valid number.")
+
+# Pick a random middle relay from remaining relays
+num = random.randint(0, len(relays) -1)
+middle_relay = relays[num]
+print("Middle relay: ", middle_relay['name'])
 exit_node = random.choice(exits)
 
 print(f"[+] Chosen path:\n  Entry: {entry_relay['name']} ({entry_relay['ip']})\n  Middle: {middle_relay['name']} ({middle_relay['ip']})\n  Exit: {exit_node['name']} ({exit_node['ip']})")
@@ -58,25 +84,19 @@ outermost = {
 }
 final_payload = json.dumps(outermost).encode('utf-8')
 
-# Client cert and key paths
-CLIENT_CERT = "/volumes/certs/cert.crt"
-CLIENT_KEY = "/volumes/certs/cert.key"
 
-# Create SSL context for client (outgoing connection)
-context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
 
-# Disable verification because of self signed certs
-context.check_hostname = False
-context.verify_mode = ssl.CERT_NONE
+# Connect using plain TCP (no TLS)
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+    sock.connect((entry_relay['ip'], 443))
+    print(f"[+] Connected to entry relay at {entry_relay['ip']}:443 over plain TCP")
+    
+    try:
+            sock.sendall(final_payload)
+            print("[+] Encrypted onion message sent to entry relay over plain TCP")
+            sleep(2)  # Wait 2 seconds before sending the next message
+    except KeyboardInterrupt:
+        print("[*] Stopped sending messages.")
+    finally:
+        sock.shutdown(socket.SHUT_WR)
 
-context.load_cert_chain(certfile=CLIENT_CERT, keyfile=CLIENT_KEY)
-# If you have a custom CA, add it here:
-# context.load_verify_locations(cafile="/volumes/certs/ca.crt")
-
-# Connect and send over TLS to the entry relay
-with socket.create_connection((entry_relay['ip'], 443)) as sock:
-    with context.wrap_socket(sock, server_hostname=entry_relay['ip']) as ssock:
-        print(f"[+] TLS connection established to {entry_relay['ip']}:443")
-        ssock.sendall(final_payload)
-        ssock.shutdown(socket.SHUT_WR)
-        print("[+] Encrypted onion message sent to entry relay over TLS")
