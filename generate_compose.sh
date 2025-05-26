@@ -85,6 +85,7 @@ write_clients() {
     if [[ i -le "$NUM_TRUE_TOR_CLIENTS" ]]; then
         create_build_context "$name" "${UTILS_DIR}/true_client" "/volumes"
     else
+        name=$name"-obfuscated"
         create_build_context "$name" "${UTILS_DIR}/client" "/volumes"
     fi
 

@@ -7,11 +7,14 @@ if [ ${#clients[@]} -eq 0 ]; then
   echo "No client containers found."
   exit 1
 fi
-
-echo "Available client containers:"
+echo "┌────────────────────────────────┐"
+echo "│[*] Available client containers │"
+echo "┌────────────────────────────────┐"
 for i in "${!clients[@]}"; do
-  echo "$i) ${clients[$i]}"
+  printf "│ %-30s │\n" "$i) ${clients[$i]}"
 done
+echo "└────────────────────────────────┘"
+
 
 # Prompt user to choose
 read -p "Select a client container by number: " choice
@@ -23,6 +26,7 @@ if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 0 ] || [ "$choice" -ge "${#c
 fi
 
 selected_client="${clients[$choice]}"
+
 echo "[+] Running client script in container: $selected_client"
 
 docker exec -it "$selected_client" python3 volumes/client.py

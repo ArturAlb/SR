@@ -52,7 +52,8 @@ When finished, run the `cleanup.sh` script to remove the `build` directory and t
 
 ```
 ├── censor :: Acts as the firewall or network censor. Monitors network traffic for Tor-like patterns  and blocks traffic or IP addresses accordingly.
-├── client :: Simulates a user inside the censored country attempting to send messages to the hidden service using either direct or obfuscated routes.
+├── client :: Simulates a user inside the censored country attempting to send messages to the hidden service using obfuscated packets.
+├── true_client :: Simulates a user inside the censored country attempting to send messages to the hidden service.
 ├── exit :: Represents the final node in the Tor-like relay path that delivers the message to the hidden service.
 ├── hidden_service :: The destination service located outside the censored region that receives the client’s messages.
 └── relay :: Intermediate nodes that help route messages from the client to the hidden service, forming an onion-routing-like path.

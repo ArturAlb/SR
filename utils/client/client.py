@@ -20,9 +20,13 @@ if len(relays) < 2 or len(exits) == 0:
 # Randomly pick 2 relays and 1 exit node
 # entry_relay, middle_relay = random.sample(relays, 2)
 # Show menu to select entry relay
-print("[*] Available entry relays:")
+print("┌─────────────────────────────────────────────┐")
+print("│ [*] Available entry relays                  │")
+print("┌─────────────────────────────────────────────┐")
 for i, relay in enumerate(relays):
-    print(f"{i}: {relay['name']} ({relay['ip']})")
+    line = f"{i}) {relay['name']} ({relay['ip']})"
+    print(f"│ {line:<44}│")
+print("└─────────────────────────────────────────────┘")
 
 # User selects one
 while True:
