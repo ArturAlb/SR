@@ -30,10 +30,16 @@ To start developing, you must build and start the servers and networks:
 ./restart.sh
 ```
 
-Then you can send messages from the `client` to the `hidden service`:
+Then you can send `tor` messages from the `client` to the `hidden service`:
 
 ```bash
-./send_message.sh
+./send_tor_message.sh
+```
+
+You can also send `webRTC` messages from the `client` to the `hidden service`:
+
+```bash
+./send_webRTC_message.sh
 ```
 
 You can also generate a `docker-compose.yml` file:
@@ -56,6 +62,7 @@ When finished, run the `cleanup.sh` script to remove the `build` directory and t
 ├── true_client :: Simulates a user inside the censored country attempting to send messages to the hidden service.
 ├── exit :: Represents the final node in the Tor-like relay path that delivers the message to the hidden service.
 ├── hidden_service :: The destination service located outside the censored region that receives the client’s messages.
+├── relay-tor :: Intermediate nodes that help route messages from the client to the hidden service, forming an onion-routing-like path.
 └── relay :: Intermediate nodes that help route messages from the client to the hidden service, forming an onion-routing-like path.
 ```
 
