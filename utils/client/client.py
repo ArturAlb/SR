@@ -11,7 +11,7 @@ with open('/volumes/directory.json', 'r') as f:
     directory = json.load(f)
 
 # Separate nodes by type
-relays = [entry for entry in directory if entry['type'] == 'relay']
+relays = [entry for entry in directory if entry['type'] == 'relay-tor']
 exits = [entry for entry in directory if entry['type'] == 'exit']
 
 if len(relays) < 2 or len(exits) == 0:

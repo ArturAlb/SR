@@ -56,7 +56,9 @@ print(ip)
   fi
 
   # Determine type
-  if [[ "$service" == relay* ]]; then
+  if [[ "$service" == relay-tor* ]]; then
+    TYPE="relay-tor"
+  elif [[ "$service" == relay* ]]; then
     TYPE="relay"
   elif [[ "$service" == exit* ]]; then
     TYPE="exit"

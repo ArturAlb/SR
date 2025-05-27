@@ -3,7 +3,7 @@
 # ======================
 # CONFIGURABLE VARIABLES
 # ======================
-NUM_RELAYS=${1:-6}
+NUM_RELAYS=${1:-3}
 NUM_EXITS=${2:-3}
 NUM_CLIENTS=${3:-3}
 NUM_TRUE_TOR_CLIENTS=${4:-1}
@@ -117,6 +117,13 @@ write_relays() {
     ip="10.1.0.$((i+1))"
     name="relay${i}"
     create_build_context "$name" "${UTILS_DIR}/relay" "/volumes"
+    write_service_block "$name" "${name}-${ip}" "$ip" "tor_net"
+  done
+
+  for i in $(seq 1 $NUM_RELAYS); do
+    ip="10.1.0.$((i+1+$NUM_RELAYS))"
+    name="relay-tor${i}"
+    create_build_context "$name" "${UTILS_DIR}/relay-tor" "/volumes"
     write_service_block "$name" "${name}-${ip}" "$ip" "tor_net"
   done
 }
