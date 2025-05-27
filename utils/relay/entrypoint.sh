@@ -11,4 +11,4 @@ echo "Installing requests"
 pip install requests > /dev/null 2>&1
 
 
-exec python3 /volumes/ssl_serv.py --mode webrtc
+exec python3 /volumes/ssl_serv.py --mode tor

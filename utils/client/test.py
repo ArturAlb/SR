@@ -18,12 +18,12 @@ def write_temp_cert(cert_base64, name):
     return cert_path
 
 
-print(exits[0]['cert_base64'])
+
 
 
 # Encrypt final message to the exit node
 exit_cert =  write_temp_cert(exits[0]['cert_base64'], exits[0]['name'])
-print(exit_cert)
+
 inner_msg = "This is the secret message for the final node"
 encrypted_inner = encrypt_with_tls_cert(exit_cert, inner_msg.encode('utf-8'))
 
@@ -38,7 +38,7 @@ json_middle = json.dumps(middle_msg).encode('utf-8')
 obj = next((o for o in relays if o.get('name') == "relay1"), None)
 
 relay_cert = write_temp_cert(obj['cert_base64'], obj['name'])
-print(relay_cert)
+
 ciphertext = encrypt_with_tls_cert(relay_cert, json_middle)
 
 # Add 'is_tor' flag to the outermost message

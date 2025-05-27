@@ -29,7 +29,7 @@ async def exit_server():
 
     # Wait for offer from relay via signaling server
     import os
-    EXIT_ID = os.environ.get("EXIT_ID", "exit_node1")
+    EXIT_ID = os.environ.get("EXIT_ID", "exit1")
     print(f"[EXIT] Waiting for offer via signaling key: {EXIT_ID}", file=sys.stderr)
     offer_data = None
     while offer_data is None:
