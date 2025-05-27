@@ -56,7 +56,9 @@ print(ip)
   fi
 
   # Determine type
-  if [[ "$service" == relay* ]]; then
+  if [[ "$service" == relay-tor* ]]; then
+    TYPE="relay-tor"
+  elif [[ "$service" == relay* ]]; then
     TYPE="relay"
   elif [[ "$service" == exit* ]]; then
     TYPE="exit"
@@ -79,6 +81,10 @@ echo "]" >> "$TEMP_DIRECTORY_JSON"
 
 # Copy to client(s)
 for client_dir in build/*client*/; do
+  cp "$TEMP_DIRECTORY_JSON" "${client_dir}volumes/"
+done
+
+for client_dir in build/*relay*/; do
   cp "$TEMP_DIRECTORY_JSON" "${client_dir}volumes/"
 done
 

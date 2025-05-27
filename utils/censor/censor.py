@@ -52,6 +52,8 @@ def process_packet(pkt):
                     log_packet("dropped", scapy_pkt, reason="Detected is_tor: true")
                     pkt.drop()
                     return
+                if '"is_tor": false' in payload_str.lower():
+                    print("IS NOT TOR")
             except Exception as e:
                 log_packet("passed", scapy_pkt, reason=f"Decode error: {e}")
                 pkt.accept()
